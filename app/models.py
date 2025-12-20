@@ -11,6 +11,20 @@ Row = NewType("Row", int)
 File = NewType("File", int)
 
 
+class Color(StrEnum):
+    WHITE = 'w'
+    BLACK = 'b'
+
+
+class PieceType(StrEnum):
+    PAWN = 'p'
+    ROOK = 'r'
+    KNIGHT = 'n'
+    BISHOP = 'b'
+    QUEEN = 'q'
+    KING = 'k'
+
+
 @dataclass(frozen=True)
 class Square:
     row: Row
@@ -29,17 +43,19 @@ class Square:
 
 @dataclass(frozen=True)
 class Move:
-    piece: "Piece"
+    side: Color
+    piece: PieceType
     start_square: Square
     end_square: Square
     check: bool = False
     mate: bool = False
     draw: bool = False
-    taken_piece: Optional["Piece"] = None
+    taken_piece: PieceType | None = None
+    taken_piece_position: Optional[Square] = None
 
-    def _to_fen(self) -> str:
+    def to_fen(self) -> str:
         notation = ""
-        match self.piece.name:
+        match self.piece:
             case PieceType.KING:
                 notation += "K"
             case PieceType.QUEEN:
@@ -51,7 +67,7 @@ class Move:
             case PieceType.KNIGHT:
                 notation += "N"
         if self.taken_piece:
-            if self.piece.name == PieceType.PAWN:
+            if self.piece == PieceType.PAWN:
                 notation += self.start_square.to_notation()[0]
             notation += "x"
         notation += self.end_square.to_notation()
@@ -66,21 +82,7 @@ class Move:
         return notation
 
     def __repr__(self) -> str:
-        return self._to_fen()
-
-
-class Color(StrEnum):
-    WHITE = 'w'
-    BLACK = 'b'
-
-
-class PieceType(StrEnum):
-    PAWN = 'p'
-    ROOK = 'r'
-    KNIGHT = 'n'
-    BISHOP = 'b'
-    QUEEN = 'q'
-    KING = 'k'
+        return self.to_fen()
 
 
 class PositionsForCastlingWhite:

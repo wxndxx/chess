@@ -1,20 +1,35 @@
 from app.models import Color
 
-NOTATION = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7}
-REVERSE_NOTATION = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
+NOTATION = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+REVERSE_NOTATION = {0: "a", 1: "b", 2: "c", 3: "d", 4: "e", 5: "f", 6: "g", 7: "h"}
 
 
 class FEN:
-    def __init__(self, fen_string: str | None = None):
-        self.position: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
-        self.move_order: Color = Color.WHITE
-        self.castles: str = "KQkq"
-        self.en_passant: str = "-"
-        self.draw_counter: int = 0
-        self.move_counter: int = 1
+    def __init__(
+        self,
+        fen_string: str | None = None,
+        position: str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR",
+        move_order: Color = Color.WHITE,
+        castles: str = "KQkq",
+        en_passant: str = "-",
+        draw_counter: int = 0,
+        move_counter: int = 1,
+    ):
+        self.position = position
+        self.move_order = move_order
+        self.castles = castles
+        self.en_passant = en_passant
+        self.draw_counter = draw_counter
+        self.move_counter = move_counter
 
         if fen_string:
             self._validate(fen_string)
+
+    def __str__(self) -> str:
+        return self._create_fen_string()
+
+    def __repr__(self) -> str:
+        return self._create_fen_string()
 
     def _validate(self, fen_string: str):
         raw_data = fen_string.split(" ")
@@ -50,8 +65,10 @@ class FEN:
         self.move_counter = int(raw_data[5])
 
     def show(self):
-        return (f"{self.position} {self.move_order.value} {self.castles} "
-                f"{self.en_passant} {self.draw_counter} {self.move_counter}")
+        return (
+            f"{self.position} {self.move_order.value} {self.castles} "
+            f"{self.en_passant} {self.draw_counter} {self.move_counter}"
+        )
 
     def change_move_order(self):
         if self.move_order == Color.BLACK:
@@ -59,3 +76,11 @@ class FEN:
         else:
             self.move_order = Color.BLACK
 
+    def get_next_color(self):
+        if self.move_order == Color.BLACK:
+            return Color.WHITE
+        return Color.BLACK
+
+    def _create_fen_string(self) -> str:
+        return (f"{self.position} {self.move_order.value} {self.castles} {self.en_passant} "
+                f"{self.draw_counter} {self.move_counter}")

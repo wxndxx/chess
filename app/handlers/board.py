@@ -1,12 +1,16 @@
-from app.handlers.pieces import Piece
-from app.models import Color, Square, PieceType
+from app.handlers.fen import FEN
+from app.handlers.pieces import Piece, PieceFactory
+from app.models import Color, Square, PieceType, Row, File
 
 
 class Board:
-    def __init__(self) -> None:
+    def __init__(self, fen: FEN, pieces: list[Piece] | None = None) -> None:
         self.board = [[None] * 8 for _ in range(8)]  # row[file]
-        self.white_pieces: set[Piece] = set()
-        self.black_pieces: set[Piece] = set()
+        self.fen = fen
+        self._white_pieces: list[Piece] = list()
+        self._black_pieces: list[Piece] = list()
+        self._pieces: list[Piece] = pieces if pieces else list()
+        self.arrange()
 
     def __repr__(self) -> str:
         return self.to_fen()
@@ -14,15 +18,30 @@ class Board:
     def get_piece_in_square(self, square: Square) -> Piece | None:
         return self.board[square.row][square.file]
 
-    def get_king(self, color: Color) -> Piece:
-        for row in range(7, -1, -1):
-            for piece_in_square in self.board[row]:
-                if piece_in_square and piece_in_square.name == PieceType.KING and piece_in_square.color == color:
-                    return piece_in_square
-
     def _get_square_for_display(self, row: int, file: int) -> str:
         square = self.board[row][file]
         return str(square) if isinstance(square, Piece) else "-"
+
+    def arrange(self) -> None:
+        """Arrange pieces on the board"""
+        row_index = 7
+        for row in self.fen.position.split("/"):
+            file_index = 0
+            for x in row:
+                if x.isdigit():
+                    file_index = file_index + int(x)
+                else:
+                    piece = None
+                    position = Square(row=Row(row_index), file=File(file_index))
+                    if self._pieces:
+                        for piece in self._pieces:
+                            if piece.position == position:
+                                break
+                    else:
+                        piece = PieceFactory.get_piece(symbol=x, position=position)
+                    self.add(piece, position)
+                    file_index += 1
+            row_index -= 1
 
     def display(self) -> None:
         for row in range(7, -1, -1):
@@ -36,8 +55,20 @@ class Board:
 
     def add(self, piece: Piece, square: Square) -> None:
         self.board[square.row][square.file] = piece
+        if piece.color == Color.BLACK:
+            self._black_pieces.append(piece)
+        else:
+            self._white_pieces.append(piece)
 
     def remove(self, square: Square) -> None:
+        piece_in_square = self.get_piece_in_square(square)
+        if piece_in_square:
+            self.get_all_pieces()
+            self._pieces.remove(piece_in_square)
+            if piece_in_square.color == Color.BLACK:
+                self._black_pieces.remove(piece_in_square)
+            else:
+                self._white_pieces.remove(piece_in_square)
         self.board[square.row][square.file] = None
 
     def to_fen(self) -> str:
@@ -59,14 +90,28 @@ class Board:
         return "/".join(fen_rows)
 
     def get_pieces(self, color: Color) -> list[Piece]:
-        pieces = self.white_pieces if color == Color.WHITE else self.black_pieces
+        pieces = self._white_pieces if color == Color.WHITE else self._black_pieces
         if not pieces:
             for row in range(7, -1, -1):
                 for square in self.board[row]:
                     if square and square.color == color:
-                        pieces.add(square)
+                        pieces.append(square)
             if color == Color.WHITE:
-                self.white_pieces = pieces
+                self._white_pieces = pieces
             else:
-                self.black_pieces = pieces
+                self._black_pieces = pieces
         return pieces
+
+    def get_all_pieces(self) -> list[Piece]:
+        if not self._pieces:
+            for row in range(7, -1, -1):
+                for square in self.board[row]:
+                    if square:
+                        self._pieces.append(square)
+        return self._pieces
+
+    def get_king(self, color: Color) -> Piece:
+        pieces = self.get_pieces(color)
+        for piece in pieces:
+            if piece.name == PieceType.KING:
+                return piece
