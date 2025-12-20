@@ -1,2 +1,2 @@
 # chess
-Python Chess Engine
+Python Chess Engine (WIP)
