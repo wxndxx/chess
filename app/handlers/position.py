@@ -54,10 +54,12 @@ class PositionHandler:
         return False
 
     @cache
-    def get_possible_moves(self) -> set[Move]:
+    def get_possible_moves(self, color: Color | None = None) -> set[Move]:
         """Get all theoretical possible moves"""
+        if not color:
+            color = self.fen.move_order
         if not self._possible_moves:
-            pieces = self.board.get_pieces(self.fen.move_order)
+            pieces = self.board.get_pieces(color)
             for piece in pieces:
                 self._possible_moves.update(self._get_piece_moves(piece))
         return self._possible_moves
