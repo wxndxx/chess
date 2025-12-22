@@ -1,6 +1,7 @@
 import pytest
 
 from app.handlers.board import Board
+from app.handlers.pieces import PieceHandler
 from app.handlers.position import PositionHandler
 from app.handlers.fen import FEN
 
@@ -50,13 +51,35 @@ from app.handlers.fen import FEN
             13,
             id="King moves"
         ),
+        pytest.param(
+            "rnbqkbnr/pppp1ppp/8/4p3/2P5/8/PP1PPPPP/RNBQKBNR w KQkq e6 0 1",
+            {"Nf3"},
+            {"Ne2", "Be2", "Bg2", "Qd2", "Rh2", "Ra2", "Nd2", "Bb2", "Bd2"},
+            22,
+            id="Taking your pieces"
+        ),
+        pytest.param(
+            "k7/6P1/8/8/8/8/8/K7 w - - 0 1",
+            {"g8B", "g8Q", "g8R", "g8N"},
+            {"g8"},
+            7,
+            id="Pawn promotion"
+        ),
+        pytest.param(
+            "k4n2/6P1/8/8/8/8/8/K7 w - - 0 1",
+            {"gxf8B", "gxf8Q", "gxf8R", "gxf8N"},
+            {"g8", "gxf8"},
+            11,
+            id="Pawn promotion with taking a piece"
+        )
     ],
 )
 def test_possible_moves(fen_string, must_have, must_not_have, expected_len):
     fen = FEN(fen_string)
-    board = Board(fen=fen)
-    position_handler = PositionHandler(fen=fen, board=board)
-    moves = position_handler.get_possible_moves()
+    pieces = PieceHandler.create_pieces(fen)
+    board = Board(pieces)
+    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant)
+    moves = position.get_possible_moves()
     str_moves = [move.to_fen() for move in moves]
 
     for move in must_have:
@@ -87,9 +110,10 @@ def test_possible_moves(fen_string, must_have, must_not_have, expected_len):
 )
 def test_en_passant_moves(fen_string, must_have, must_not_have):
     fen = FEN(fen_string)
-    board = Board(fen=fen)
-    position_handler = PositionHandler(fen=fen, board=board)
-    moves = position_handler.get_possible_moves()
+    pieces = PieceHandler.create_pieces(fen)
+    board = Board(pieces)
+    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant)
+    moves = position.get_possible_moves()
     str_moves = [move.to_fen() for move in moves]
     for move in must_have:
         assert move in str_moves

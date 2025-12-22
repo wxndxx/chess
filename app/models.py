@@ -51,26 +51,20 @@ class Move:
     mate: bool = False
     draw: bool = False
     taken_piece: PieceType | None = None
-    taken_piece_position: Optional[Square] = None
+    taken_piece_position: Square | None = None
+    promotion: PieceType | None = None
 
     def to_fen(self) -> str:
         notation = ""
-        match self.piece:
-            case PieceType.KING:
-                notation += "K"
-            case PieceType.QUEEN:
-                notation += "Q"
-            case PieceType.ROOK:
-                notation += "R"
-            case PieceType.BISHOP:
-                notation += "B"
-            case PieceType.KNIGHT:
-                notation += "N"
+        if self.piece != PieceType.PAWN:
+            notation += self.piece.value.upper()
         if self.taken_piece:
             if self.piece == PieceType.PAWN:
                 notation += self.start_square.to_notation()[0]
             notation += "x"
         notation += self.end_square.to_notation()
+        if self.promotion:
+            notation += self.promotion.value.upper()
         if self.check and not self.mate:
             notation += "+"
             return notation

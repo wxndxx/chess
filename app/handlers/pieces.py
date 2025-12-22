@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
-from app.models import Square, Color, PieceType
+from app.handlers.fen import FEN
+from app.models import Square, Color, PieceType, Row, File
 
 
 class Piece(ABC):
@@ -132,3 +133,21 @@ class PieceFactory:
                 return Queen(color=color, position=position)
             case PieceType.KING:
                 return King(color=color, position=position)
+
+
+class PieceHandler:
+    @classmethod
+    def create_pieces(cls, fen: FEN) -> list[Piece]:
+        pieces = []
+        row_index = 7
+        for row in fen.position.split("/"):
+            file_index = 0
+            for x in row:
+                if x.isdigit():
+                    file_index = file_index + int(x)
+                else:
+                    position = Square(row=Row(row_index), file=File(file_index))
+                    pieces.append(PieceFactory.get_piece(symbol=x, position=position))
+                    file_index += 1
+            row_index -= 1
+        return pieces

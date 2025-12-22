@@ -1,6 +1,3 @@
-from functools import cache
-
-from app.handlers.fen import FEN
 from app.tools import create_and_validate_square
 from app.models import (
     Color,
@@ -13,13 +10,14 @@ from app.models import (
     PositionsForCastlingWhite,
 )
 from app.handlers.board import Board
-from app.handlers.pieces import Piece, SlidingPiece, Pawn, Knight, King, PieceFactory
+from app.handlers.pieces import Piece, SlidingPiece, Pawn, Knight, King
 
 
 class PositionHandler:
-    def __init__(self, fen: FEN, board: Board):
+    def __init__(self, board: Board, move_order: Color, en_passant: str):
         self.board: Board = board
-        self.fen: FEN = fen
+        self.move_order: Color = move_order
+        self.en_passant: str = en_passant
         opponent_color = self._get_opponent_color()
         self.attack_handler: AttackHandler = AttackHandler(
             board=self.board,
@@ -28,13 +26,13 @@ class PositionHandler:
         self._possible_moves: set[Move] = set()
 
     def is_check(self) -> bool:
-        king = self.board.get_king(self.fen.move_order)
+        king = self.board.get_king(self.move_order)
         if king.position in self.attack_handler.get_attacked_squares():
             return True
         return False
 
     def is_mate(self) -> bool:
-        king = self.board.get_king(self.fen.move_order)
+        king = self.board.get_king(self.move_order)
         king_moves = self._get_king_moves(king)
         if (
             king.position in self.attack_handler.get_attacked_squares()
@@ -44,7 +42,7 @@ class PositionHandler:
         return False
 
     def is_draw(self) -> bool:
-        king = self.board.get_king(self.fen.move_order)
+        king = self.board.get_king(self.move_order)
         possible_moves = self.get_possible_moves()
         if (
             king not in self.attack_handler.get_attacked_squares()
@@ -53,11 +51,10 @@ class PositionHandler:
             return True
         return False
 
-    @cache
     def get_possible_moves(self, color: Color | None = None) -> set[Move]:
         """Get all theoretical possible moves"""
         if not color:
-            color = self.fen.move_order
+            color = self.move_order
         if not self._possible_moves:
             pieces = self.board.get_pieces(color)
             for piece in pieces:
@@ -93,36 +90,61 @@ class PositionHandler:
                             taken_piece=piece_in_square.name,
                             taken_piece_position=piece_in_square.position,
                         )
-                        if not self.is_check():
-                            moves.add(move)
+                        moves.add(move)
                     break
                 else:
                     move = Move(
                         side=piece.color,
                         piece=piece.name, start_square=piece.position, end_square=square
                     )
-                    if not self.is_check():
-                        moves.add(move)
+                    moves.add(move)
+        return moves
+
+    @staticmethod
+    def _is_last_rank(square: Square, direction: int) -> bool:
+        if direction == -1:
+            return square.row == 0
+        return square.row == 7
+
+    @staticmethod
+    def _create_promotion_moves(pawn: Pawn, end_square: Square, piece_in_square: Piece | None = None) -> set[Move]:
+        moves = set()
+        for promotion in [PieceType.QUEEN, PieceType.KNIGHT, PieceType.ROOK, PieceType.BISHOP]:
+            moves.add(Move(
+                side=pawn.color,
+                piece=pawn.name,
+                start_square=pawn.position,
+                end_square=end_square,
+                taken_piece=piece_in_square.name if piece_in_square else None,
+                taken_piece_position=piece_in_square.position if piece_in_square else None,
+                promotion=promotion,
+            ))
         return moves
 
     def _get_pawn_moves(self, pawn: Pawn) -> set[Move]:
         moves = self._get_sliding_piece_moves(pawn)
+        if len(moves) == 1:
+            move = next(iter(moves))
+            if self._is_last_rank(move.end_square, pawn.direction):
+                moves = self._create_promotion_moves(pawn, move.end_square)
         for side in (-1, 1):
             square = create_and_validate_square(pawn, pawn.direction, side)
             if square:
                 piece_in_square = self.board.get_piece_in_square(square)
                 if piece_in_square and piece_in_square.color != pawn.color:
-                    move = Move(
-                        side=pawn.color,
-                        piece=pawn.name,
-                        start_square=pawn.position,
-                        end_square=square,
-                        taken_piece=piece_in_square.name,
-                        taken_piece_position=piece_in_square.position,
-                    )
-                    if not self.is_check():
+                    if not self._is_last_rank(square, pawn.direction):
+                        move = Move(
+                            side=pawn.color,
+                            piece=pawn.name,
+                            start_square=pawn.position,
+                            end_square=square,
+                            taken_piece=piece_in_square.name,
+                            taken_piece_position=piece_in_square.position,
+                        )
                         moves.add(move)
-                if square.to_notation() == self.fen.en_passant:
+                    else:
+                        moves.update(self._create_promotion_moves(pawn, square, piece_in_square))
+                if square.to_notation() == self.en_passant:
                     move = Move(
                         side=pawn.color,
                         piece=pawn.name,
@@ -134,12 +156,12 @@ class PositionHandler:
                             file=File(square.file),
                         ),
                     )
-                    if not self.is_check():
-                        moves.add(move)
+                    moves.add(move)
         return moves
 
     def _get_knight_moves(self, knight: Knight) -> set[Move]:
         moves = set()
+        move = None
         for row_delta, file_delta in knight.get_moves():
             square = create_and_validate_square(knight, row_delta, file_delta)
             if square:
@@ -153,14 +175,14 @@ class PositionHandler:
                         taken_piece=piece_in_square.name,
                         taken_piece_position=piece_in_square.position,
                     )
-                else:
+                if not piece_in_square:
                     move = Move(
                         side=knight.color,
                         piece=knight.name,
                         start_square=knight.position,
                         end_square=square,
                     )
-                if not self.is_check():
+                if move:
                     moves.add(move)
         return moves
 
@@ -215,7 +237,7 @@ class PositionHandler:
         moves = set()
         if king.has_moved:
             return moves
-        if self.fen.move_order == Color.WHITE:
+        if self.move_order == Color.WHITE:
             short_castle = self._check_castle(
                 rook_position=PositionsForCastlingWhite.short_rook,
                 squares=PositionsForCastlingWhite.short_squares,
@@ -244,7 +266,7 @@ class PositionHandler:
         return moves
 
     def _get_opponent_color(self) -> Color:
-        if self.fen.move_order == Color.WHITE:
+        if self.move_order == Color.WHITE:
             return Color.BLACK
         return Color.WHITE
 

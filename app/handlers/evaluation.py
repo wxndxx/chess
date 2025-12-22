@@ -17,7 +17,7 @@ class EvaluationHandler:
     @classmethod
     def evaluate(cls, position: PositionHandler) -> int:
         if position.is_mate():
-            return -10000 if position.fen.move_order == Color.WHITE else 10000
+            return -10000 if position.move_order == Color.WHITE else 10000
 
         if position.is_draw():
             return 0
