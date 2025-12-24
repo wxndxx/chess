@@ -1,8 +1,9 @@
 from app.handlers.board import Board
+from app.handlers.pieces import Pawn
 from app.handlers.position import PositionHandler, AttackHandler
 from app.models import Move, PieceType
 
-from app.tools import get_next_color
+from app.tools import get_next_color, create_and_validate_square
 
 
 class MoveHandler:
@@ -46,6 +47,15 @@ class MoveHandler:
 
     @staticmethod
     def _create_position(board: Board, move: Move) -> PositionHandler:
+        en_passant_square = None
         move_order = get_next_color(move.side)
-        position = PositionHandler(board=board, move_order=move_order, en_passant="-")
+        if move.piece == PieceType.PAWN:
+            if abs(move.start_square.row - move.end_square.row) == 2:
+                pawn: Pawn = board.get_piece_in_square(move.end_square)
+                en_passant_square = create_and_validate_square(
+                    pawn, file_delta=0, row_delta=pawn.direction
+                ).to_notation()
+        position = PositionHandler(
+            board=board, move_order=move_order, en_passant=en_passant_square
+        )
         return position

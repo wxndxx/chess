@@ -5,6 +5,7 @@ from app.handlers.fen import FEN
 from app.handlers.move import MoveHandler
 from app.handlers.pieces import PieceHandler
 from app.handlers.position import PositionHandler
+from app.tools import notation_to_square
 
 
 @pytest.mark.parametrize(
@@ -99,6 +100,12 @@ from app.handlers.position import PositionHandler
             {"gxf8Q#", "gxf8R#"},
             {"gxf8Q+", "gxf8R+", "g8Q+", "gxf8B+"},
             id="Back rank mate with pawn promotion"
+        ),
+        pytest.param(
+            "4k3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
+            {"O-O", "O-O-O", "Kd2"},
+            {"Rb2"},
+            id="Castling"
         )
     ]
 )
@@ -106,7 +113,7 @@ def test_move_generation(fen_string, must_have, must_not_have):
     fen = FEN(fen_string)
     pieces = PieceHandler.create_pieces(fen)
     board = Board(pieces)
-    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant)
+    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant, castling=fen.castles)
     move_handler = MoveHandler(board)
     moves = []
     for move in position.get_possible_moves():
@@ -118,3 +125,50 @@ def test_move_generation(fen_string, must_have, must_not_have):
         assert move in moves
     for move in must_not_have:
         assert move not in moves
+
+
+@pytest.mark.parametrize(
+    "fen_string, move, squares_with_pieces, squares_without_pieces, piece_count",
+    [
+        pytest.param(
+            "4k3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
+            "O-O",
+            {"g1", "f1", "a1", "e8"},
+            {"e1", "h1"},
+            4,
+            id="Short castle"
+        ),
+        pytest.param(
+    "4k3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
+            "O-O-O",
+            {"c1", "d1", "h1", "e8"},
+            {"e1", "a1"},
+            4,
+            id="Long castle"
+        ),
+        pytest.param(
+            "r3k3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
+            "Rxa8",
+            {"a8", "e8", "e1", "h1"},
+            {"a1"},
+            4,
+            id="Taking a piece"
+        )
+    ]
+)
+def test_board_after_move(fen_string, move, squares_with_pieces, squares_without_pieces, piece_count):
+    fen = FEN(fen_string)
+    pieces = PieceHandler.create_pieces(fen)
+    board = Board(pieces)
+    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant, castling=fen.castles)
+    move_handler = MoveHandler(board)
+    updated_board: Board = None
+    for possible_move in position.get_possible_moves():
+        if possible_move.to_fen() == move:
+            _, updated_board = move_handler.make_a_move(possible_move)
+            break
+    assert len(updated_board.get_all_pieces()) == piece_count
+    for square in squares_with_pieces:
+        assert board.get_piece_in_square(notation_to_square(square))
+    for square in squares_without_pieces:
+        assert board.get_piece_in_square(notation_to_square(square)) is None

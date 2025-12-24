@@ -14,10 +14,11 @@ from app.handlers.pieces import Piece, SlidingPiece, Pawn, Knight, King
 
 
 class PositionHandler:
-    def __init__(self, board: Board, move_order: Color, en_passant: str):
+    def __init__(self, board: Board, move_order: Color, en_passant: str, castling: str | None = None):
         self.board: Board = board
         self.move_order: Color = move_order
-        self.en_passant: str = en_passant
+        self.en_passant: str | None = en_passant
+        self.castling: str | None = castling
         opponent_color = self._get_opponent_color()
         self.attack_handler: AttackHandler = AttackHandler(
             board=self.board,
@@ -211,8 +212,9 @@ class PositionHandler:
                             end_square=square,
                         )
                         moves.add(move)
-        castling_moves = self.get_castling_moves(king)
-        moves.update(castling_moves)
+        if not self.castling == "-":
+            castling_moves = self.get_castling_moves(king)
+            moves.update(castling_moves)
         return moves
 
     def _check_castle(

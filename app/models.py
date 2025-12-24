@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import NewType, Optional
+from typing import NewType
 
 
-NOTATION = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7}
 REVERSE_NOTATION = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
 
 
@@ -56,6 +55,11 @@ class Move:
 
     def to_fen(self) -> str:
         notation = ""
+        if self.piece == PieceType.KING:
+            if self.end_square.file - self.start_square.file == 2:
+                return "O-O"
+            if self.start_square.file - self.end_square.file == 2:
+                return "O-O-O"
         if self.piece != PieceType.PAWN:
             notation += self.piece.value.upper()
         if self.taken_piece:

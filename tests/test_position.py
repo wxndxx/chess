@@ -27,7 +27,7 @@ from app.handlers.fen import FEN
             "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",
             {"Rb1", "Ra7"},
             {"Rg8"},
-            16,
+            15,
             id="Rook moves"
         ),
         pytest.param(
@@ -71,6 +71,13 @@ from app.handlers.fen import FEN
             {"g8", "gxf8"},
             11,
             id="Pawn promotion with taking a piece"
+        ),
+        pytest.param(
+            "3rk3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
+            {"O-O", "Rd1"},
+            {"O-O-O", "Kd1"},
+            23,
+            id="Castle through check"
         )
     ],
 )
@@ -78,7 +85,7 @@ def test_possible_moves(fen_string, must_have, must_not_have, expected_len):
     fen = FEN(fen_string)
     pieces = PieceHandler.create_pieces(fen)
     board = Board(pieces)
-    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant)
+    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant, castling=fen.castles)
     moves = position.get_possible_moves()
     str_moves = [move.to_fen() for move in moves]
 
@@ -112,7 +119,7 @@ def test_en_passant_moves(fen_string, must_have, must_not_have):
     fen = FEN(fen_string)
     pieces = PieceHandler.create_pieces(fen)
     board = Board(pieces)
-    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant)
+    position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant, castling=fen.castles)
     moves = position.get_possible_moves()
     str_moves = [move.to_fen() for move in moves]
     for move in must_have:
