@@ -48,6 +48,7 @@ class Board:
         else:
             moved_piece.position = move.end_square
             self.add(piece=moved_piece, square=move.end_square)
+
         if is_short_castling(move):
             short_rook = self._get_short_rook(move.side)
             self.remove(short_rook.position)
@@ -79,6 +80,7 @@ class Board:
             )
             moved_piece = PieceFactory.get_piece(symbol, move.start_square)
         self.add(piece=moved_piece, square=move.start_square)
+
         if is_short_castling(move):
             rook_square = create_and_validate_square(
                 moved_piece, row_delta=0, file_delta=1

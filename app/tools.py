@@ -1,3 +1,6 @@
+import functools
+import time
+
 from app.handlers.pieces import Piece
 from app.models import Square, Row, File, Color, Move, PieceType
 
@@ -39,3 +42,15 @@ def is_long_castling(move: Move) -> bool:
 def notation_to_square(notation: str) -> Square:
     str_file, str_row = notation
     return Square(row=Row(int(str_row) - 1), file=File(NOTATION[str_file]))
+
+
+def measure_time(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        elapsed = time.perf_counter() - start
+        print(f"{func.__name__} executed in {elapsed:.2f} seconds")
+        return result
+
+    return wrapper

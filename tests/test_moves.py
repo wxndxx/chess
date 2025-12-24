@@ -147,13 +147,85 @@ def test_move_generation(fen_string, must_have, must_not_have):
             id="Long castle"
         ),
         pytest.param(
+            "8/8/8/8/8/8/8/R1K1k3 w - - 0 1",
+            "Rb1",
+            {"b1", "c1", "e1"},
+            {"a1"},
+            3,
+            id="Rook move"
+        ),
+        pytest.param(
+            "8/8/8/8/8/8/8/N1K2k2 w - - 0 1",
+            "Nc2",
+            {"c2", "c1", "f1"},
+            {"a1"},
+            3,
+            id="Knight move"
+        ),
+        pytest.param(
+            "8/8/8/8/8/8/8/B1K2k2 w - - 0 1",
+            "Bc3",
+            {"c3", "c1", "f1"},
+            {"a1"},
+            3,
+            id="Bishop move"
+        ),
+        pytest.param(
+            "8/8/8/8/8/8/8/Q1K2k2 w - - 0 1",
+            "Qc3",
+            {"c3", "c1", "f1"},
+            {"a1"},
+            3,
+            id="Queen move"
+        ),
+        pytest.param(
+            "8/8/8/8/8/8/P7/2K2k2 w - - 0 1",
+            "a4",
+            {"a4", "c1", "f1"},
+            {"a2", "a3"},
+            3,
+            id="Pawn move"
+        ),
+        pytest.param(
             "r3k3/8/8/8/8/8/8/R3K2R w KQ - 0 1",
             "Rxa8",
             {"a8", "e8", "e1", "h1"},
             {"a1"},
             4,
-            id="Taking a piece"
-        )
+            id="Taking a piece with a rook"
+        ),
+        pytest.param(
+            "4k3/8/8/4p3/8/8/8/B3K3 w - - 0 1",
+            "Bxe5",
+            {"e5", "e1", "e8"},
+            {"a1"},
+            3,
+            id="Taking a piece with a bishop"
+        ),
+        pytest.param(
+            "4k3/8/8/8/8/8/2p5/N3K3 w - - 0 1",
+            "Nxc2",
+            {"c2", "e1", "e8"},
+            {"a1"},
+            3,
+            id="Taking a piece with a knight"
+        ),
+        pytest.param(
+            "4k3/8/8/8/8/2p5/8/Q3K3 w - - 0 1",
+            "Qxc3",
+            {"c3", "e1", "e8"},
+            {"a1"},
+            3,
+            id="Taking a piece with a queen"
+        ),
+        pytest.param(
+            "4k3/8/8/8/8/2p5/1P6/4K3 w - - 0 1",
+            "bxc3",
+            {"c3", "e1", "e8"},
+            {"b2"},
+            3,
+            id="Taking a piece with a pawn"
+        ),
     ]
 )
 def test_board_after_move(fen_string, move, squares_with_pieces, squares_without_pieces, piece_count):
@@ -162,12 +234,11 @@ def test_board_after_move(fen_string, move, squares_with_pieces, squares_without
     board = Board(pieces)
     position = PositionHandler(board=board, move_order=fen.move_order, en_passant=fen.en_passant, castling=fen.castles)
     move_handler = MoveHandler(board)
-    updated_board: Board = None
     for possible_move in position.get_possible_moves():
         if possible_move.to_fen() == move:
-            _, updated_board = move_handler.make_a_move(possible_move)
+            move_handler.make_a_move(possible_move)
             break
-    assert len(updated_board.get_all_pieces()) == piece_count
+    assert len(board.get_all_pieces()) == piece_count
     for square in squares_with_pieces:
         assert board.get_piece_in_square(notation_to_square(square))
     for square in squares_without_pieces:
