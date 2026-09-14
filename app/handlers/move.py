@@ -1,9 +1,9 @@
 from app.handlers.board import Board
-from app.handlers.pieces import Pawn, Knight, Piece
+from app.handlers.pieces import Piece
 from app.handlers.position import PositionHandler, AttackHandler
-from app.models import Move, PieceType
+from app.models import Move, PieceType, Square, Row
 
-from app.tools import get_next_color, create_and_validate_square
+from app.tools import get_next_color
 
 
 class MoveHandler:
@@ -21,11 +21,13 @@ class MoveHandler:
         return self.make_a_move(move, save=False)
 
     def make_a_move(self, move: Move, save: bool = True) -> tuple[Move | None, Piece | None]:
+        if self.board.get_piece_in_square(move.start_square) is None:
+            return None, None
         taken_piece = self.board.make_move(move)
         if not self.is_legal(move):
             self.board.undo_move(move, taken_piece)
             return None, None
-        temp_position = self._create_position(self.board, move)
+        temp_position = self.position_after(move)
         check = temp_position.is_check()
         mate = temp_position.is_mate()
         draw = temp_position.is_draw()
@@ -45,20 +47,21 @@ class MoveHandler:
             self.board.undo_move(move, taken_piece)
         return move, taken_piece
 
-    @staticmethod
-    def _create_position(board: Board, move: Move) -> PositionHandler:
-        en_passant_square = None
-        move_order = get_next_color(move.side)
-        if move.piece == PieceType.PAWN:
-            if abs(move.start_square.row - move.end_square.row) == 2:
-                pawn: Pawn = board.get_piece_in_square(move.end_square)
-                if isinstance(pawn, Knight):
-                    print(f'ALARM! Move {move}')
-                    board.display()
-                en_passant_square = create_and_validate_square(
-                    pawn, file_delta=0, row_delta=pawn.direction
-                ).to_notation()
-        position = PositionHandler(
-            board=board, move_order=move_order, en_passant=en_passant_square
+    def position_after(self, move: Move) -> PositionHandler:
+        return PositionHandler(
+            board=self.board,
+            move_order=get_next_color(move.side),
+            en_passant=self._en_passant_after(move),
         )
-        return position
+
+    @staticmethod
+    def _en_passant_after(move: Move) -> str:
+        if move.piece != PieceType.PAWN:
+            return "-"
+        if abs(move.start_square.row - move.end_square.row) != 2:
+            return "-"
+        skipped = Square(
+            row=Row((move.start_square.row + move.end_square.row) // 2),
+            file=move.end_square.file,
+        )
+        return skipped.to_notation()

@@ -33,6 +33,8 @@ class Board:
     def make_move(self, move: Move) -> Piece | None:
         taken_piece = None
         moved_piece = self.get_piece_in_square(move.start_square)
+        if not moved_piece:
+            return None
         if move.taken_piece:
             taken_piece = self.get_piece_in_square(move.taken_piece_position)
             self.remove(move.taken_piece_position)
@@ -67,19 +69,19 @@ class Board:
 
     def undo_move(self, move: Move, taken_piece: Piece | None = None) -> None:
         moved_piece = self.get_piece_in_square(move.end_square)
-        moved_piece.position = move.start_square
-        if taken_piece:
-            self.add(piece=taken_piece, square=move.end_square)
-        else:
-            self.remove(square=move.end_square)
+        if moved_piece is None:
+            return
+        self.remove(square=move.end_square)
         if move.promotion:
-            symbol = (
-                move.promotion.lower()
-                if move.side == Color.BLACK
-                else move.promotion.upper()
-            )
-            moved_piece = PieceFactory.get_piece(symbol, move.start_square)
+            pawn_symbol = "p" if move.side == Color.BLACK else "P"
+            moved_piece = PieceFactory.get_piece(pawn_symbol, move.start_square)
+        else:
+            moved_piece.position = move.start_square
         self.add(piece=moved_piece, square=move.start_square)
+        if taken_piece:
+            restore_at = move.taken_piece_position or move.end_square
+            taken_piece.position = restore_at
+            self.add(piece=taken_piece, square=restore_at)
 
         if is_short_castling(move):
             rook_square = create_and_validate_square(

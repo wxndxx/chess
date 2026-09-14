@@ -24,43 +24,42 @@ class PositionHandler:
             board=self.board,
             opponent_color=opponent_color,
         )
-        self._possible_moves: set[Move] = set()
+        self._possible_moves: dict[Color, set[Move]] = {}
 
     def is_check(self) -> bool:
         king = self.board.get_king(self.move_order)
-        if king.position in self.attack_handler.get_attacked_squares():
-            return True
+        return king.position in self.attack_handler.get_attacked_squares()
+
+    def has_legal_move(self) -> bool:
+        for move in self.get_possible_moves():
+            taken_piece = self.board.make_move(move)
+            king = self.board.get_king(self.move_order)
+            attacked = AttackHandler(
+                self.board, self._get_opponent_color()
+            ).get_attacked_squares()
+            legal = king.position not in attacked
+            self.board.undo_move(move, taken_piece)
+            if legal:
+                return True
         return False
 
     def is_mate(self) -> bool:
-        king = self.board.get_king(self.move_order)
-        king_moves = self._get_king_moves(king)
-        if (
-            king.position in self.attack_handler.get_attacked_squares()
-            and len(king_moves) == 0
-        ):
-            return True
-        return False
+        return self.is_check() and not self.has_legal_move()
 
     def is_draw(self) -> bool:
-        king = self.board.get_king(self.move_order)
-        possible_moves = self.get_possible_moves()
-        if (
-            king not in self.attack_handler.get_attacked_squares()
-            and len(possible_moves) == 0
-        ):
-            return True
-        return False
+        return (not self.is_check()) and not self.has_legal_move()
 
     def get_possible_moves(self, color: Color | None = None) -> set[Move]:
         """Get all theoretical possible moves"""
         if not color:
             color = self.move_order
-        if not self._possible_moves:
+        if color not in self._possible_moves:
+            moves: set[Move] = set()
             pieces = self.board.get_pieces(color)
             for piece in pieces:
-                self._possible_moves.update(self._get_piece_moves(piece))
-        return self._possible_moves
+                moves.update(self._get_piece_moves(piece))
+            self._possible_moves[color] = moves
+        return self._possible_moves[color]
 
     def _get_piece_moves(self, piece: Piece) -> set[Move]:
         match piece:
