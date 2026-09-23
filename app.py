@@ -1,20 +1,16 @@
-from app.handlers.board import Board
-from app.handlers.pieces import PieceHandler
-from app.handlers.position import PositionHandler
-from app.handlers.search import SearchEngine
-from app.configuration import Configuration
+from app.game import Game
+from app.models import Color
 
 
-def main():
-    config = Configuration()
-    pieces = PieceHandler.create_pieces(config.fen)
-    board = Board(pieces)
-    board.display()
-    position = PositionHandler(board=board, move_order=config.fen.move_order, en_passant=config.fen.en_passant)
-    search = SearchEngine(position=position)
-    result = search.find_best_move(config.depth)
-    print(result.format_score())
-    print(result.format_line(config.fen.move_order, config.fen.move_counter))
+def main() -> Game:
+    engine_color: Color | None = None
+    while not engine_color:
+        try:
+            engine_color = Color(input("Enter the color of the engine (w/b):"))
+        except ValueError as exc:
+            print(exc)
+    game = Game(engine_color)
+    game.play()
 
 
 if __name__ == "__main__":
