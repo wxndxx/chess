@@ -7,8 +7,9 @@ from app.models import Color, Move
 
 
 class Game:
-    def __init__(self, color: Color, pretty: bool, score: bool) -> None:
+    def __init__(self, color: Color, pretty: bool, icons: bool, score: bool) -> None:
         self.pretty = pretty
+        self.icons = icons
         self.score = score
         self.config = Configuration()
         self.color = color
@@ -30,7 +31,7 @@ class Game:
         self._search = SearchEngine(position=self._position)
 
     def show_board(self) -> None:
-        self._board.display(self.pretty)
+        self._board.display(self.pretty, self.icons)
 
     def parse_user_move(self) -> Move:
         user_move = None
@@ -46,20 +47,22 @@ class Game:
         return user_move
 
     def play(self) -> None:
-        while True:
-            self.show_board()
-            if self.score and self._search_result is not None:
-                print(f"Score: {self._search_result.format_score()}")
-            if self._position.is_mate() or self._position.is_draw():
-                break
-            if self._position.move_order == self.color:
-                print("Thinking...")
-                self._search_result = self._search.find_best_move(self.config.depth)
-                played, _ = self._search.move_handler.make_a_move(self._search_result.move)
-                print(played)
-            else:
-                played = self.parse_user_move()
+        try:
+            while True:
+                self.show_board()
+                if self.score and self._search_result is not None:
+                    print(f"Score: {self._search_result.format_score()}")
+                if self._position.is_mate() or self._position.is_draw():
+                    break
+                if self._position.move_order == self.color:
+                    print("Thinking...")
+                    self._search_result = self._search.find_best_move(self.config.depth)
+                    played, _ = self._search.move_handler.make_a_move(self._search_result.move)
+                    print(played)
+                else:
+                    played = self.parse_user_move()
 
-            self._position = self._search.move_handler.position_after(played)
-            self._search.position = self._position
-
+                self._position = self._search.move_handler.position_after(played)
+                self._search.position = self._position
+        except KeyboardInterrupt:
+            print("\nThank you for playing!")

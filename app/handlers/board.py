@@ -21,8 +21,10 @@ class Board:
     def get_piece_in_square(self, square: Square) -> Piece | None:
         return self.board[square.row][square.file]
 
-    def _get_square_for_display(self, row: int, file: int) -> str:
+    def _get_square_for_display(self, row: int, file: int, icons: bool) -> str:
         square = self.board[row][file]
+        if icons:
+            return SYMBOLS[square.name] if isinstance(square, Piece) else "-"
         return str(square) if isinstance(square, Piece) else "-"
 
     def arrange(self, pieces: list[Piece]) -> None:
@@ -108,33 +110,36 @@ class Board:
             )
             self.add(piece=long_rook, square=long_rook.position)
 
-    def display(self, pretty: bool = False) -> None:
+    def display(self, pretty: bool = False, icons: bool = False) -> None:
         if pretty:
-            self._pretty_display()
+            self._pretty_display(icons)
         else:
-            self._raw_display()
+            self._raw_display(icons)
 
-    def _cell(self, row: int, file: int) -> str:
+    def _cell(self, row: int, file: int, icons: bool) -> str:
         light = (row + file) % 2 == 1
         background = "\033[48;5;180m" if light else "\033[48;5;94m"
         piece: Piece = self.board[row][file]
         if piece is None:
             return f"{background}   {RESET}"
-        glyph = piece.name.upper() if piece.color == Color.WHITE else piece.name.lower()
+        if icons:
+            glyph = SYMBOLS[piece.name]
+        else:
+            glyph = piece.name.upper() if piece.color == Color.WHITE else piece.name.lower()
         foreground = "\033[97m" if piece.color == Color.WHITE else "\033[30m"
         return f"{background}{foreground} {glyph} {RESET}"
 
-    def _pretty_display(self) -> None:
+    def _pretty_display(self, icons: bool) -> None:
         print("    a  b  c  d  e  f  g  h")
         for row in range(7, -1, -1):
-            cells = "".join(self._cell(row, file) for file in range(8))
+            cells = "".join(self._cell(row, file, icons) for file in range(8))
             print(f" {row + 1} {cells} {row + 1}")
         print("    a  b  c  d  e  f  g  h")
 
-    def _raw_display(self) -> None:
+    def _raw_display(self, icons: bool) -> None:
         for row in range(7, -1, -1):
             squares = " ".join(
-                self._get_square_for_display(row, file) for file in range(8)
+                self._get_square_for_display(row, file, icons) for file in range(8)
             )
             print(f"{row + 1} | {squares}")
         print("____________________")
