@@ -24,6 +24,17 @@ class PieceType(StrEnum):
     KING = 'k'
 
 
+SYMBOLS = {
+        PieceType.KING: "♚",
+        PieceType.QUEEN: "♛",
+        PieceType.ROOK: "♜",
+        PieceType.BISHOP: "♝",
+        PieceType.KNIGHT: "♞",
+        PieceType.PAWN: "♟",
+    }
+RESET = "\033[0m"
+
+
 @dataclass(frozen=True)
 class Square:
     row: Row

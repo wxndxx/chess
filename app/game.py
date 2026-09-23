@@ -7,7 +7,9 @@ from app.models import Color, Move
 
 
 class Game:
-    def __init__(self, color: Color) -> None:
+    def __init__(self, color: Color, pretty: bool, score: bool) -> None:
+        self.pretty = pretty
+        self.score = score
         self.config = Configuration()
         self.color = color
         self._board: Board = None
@@ -28,11 +30,7 @@ class Game:
         self._search = SearchEngine(position=self._position)
 
     def show_board(self) -> None:
-        self._board.display()
-
-    @property
-    def score(self) -> str:
-        return self._search_result.format_score()
+        self._board.display(self.pretty)
 
     def parse_user_move(self) -> Move:
         user_move = None
@@ -50,6 +48,8 @@ class Game:
     def play(self) -> None:
         while True:
             self.show_board()
+            if self.score and self._search_result is not None:
+                print(f"Score: {self._search_result.format_score()}")
             if self._position.is_mate() or self._position.is_draw():
                 break
             if self._position.move_order == self.color:
