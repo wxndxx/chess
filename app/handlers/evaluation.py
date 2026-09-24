@@ -34,9 +34,8 @@ class EvaluationHandler:
     def _material(position: PositionHandler) -> int:
         score = 0
         for piece in position.board.get_all_pieces():
-            value = PIECE_VALUES[piece.name]
-            pst_bonus = piece_square_value(piece)
-            score += value + pst_bonus if piece.color == Color.WHITE else -value + pst_bonus
+            bonus = PIECE_VALUES[piece.name] + piece_square_value(piece)
+            score += bonus if piece.color == Color.WHITE else -bonus
         return score
 
     @staticmethod

@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass, field
 
 from app.handlers.evaluation import EvaluationHandler, PIECE_VALUES
@@ -14,11 +15,13 @@ MATE_THRESHOLD = INF - 512
 @dataclass
 class SearchResult:
     score: int
-    pv: list[Move] = field(default_factory=list)
+    nodes: int
+    time: int
+    move_line: list[Move] = field(default_factory=list)
 
     @property
     def move(self) -> Move | None:
-        return self.pv[0] if self.pv else None
+        return self.move_line[0] if self.move_line else None
 
     def format_score(self) -> str:
         if self.score >= MATE_THRESHOLD:
@@ -30,12 +33,12 @@ class SearchResult:
         return f"{self.score / 100:.1f}"
 
     def format_line(self, side: Color, move_number: int = 1) -> str:
-        if not self.pv:
+        if not self.move_line:
             return ""
         parts: list[str] = []
         current = side
         number = move_number
-        for index, move in enumerate(self.pv):
+        for index, move in enumerate(self.move_line):
             if current == Color.WHITE:
                 parts.append(f"{number}. {move}")
             elif index == 0:
@@ -48,7 +51,7 @@ class SearchResult:
         return " ".join(parts)
 
     def __str__(self) -> str:
-        line = self.format_line(self.pv[0].side) if self.pv else ""
+        line = self.format_line(self.move_line[0].side) if self.move_line else ""
         if line:
             return f"{self.format_score()}  {line}"
         return self.format_score()
@@ -60,6 +63,7 @@ class SearchEngine:
         self.evaluator = EvaluationHandler()
         self.board = position.board
         self.move_handler = MoveHandler(position.board)
+        self.nodes: int = 0
 
     def _evaluate(self, position: PositionHandler) -> int:
         score = self.evaluator.evaluate(position)
@@ -78,6 +82,7 @@ class SearchEngine:
         depth: int = 0,
         ply: int = 0,
     ) -> tuple[int, list[Move]]:
+        self.nodes += 1
         if position.is_mate():
             return -INF + ply, []
         if position.is_draw():
@@ -113,6 +118,7 @@ class SearchEngine:
     def search(
         self, depth: int, move: Move, alpha: int, beta: int, ply: int
     ) -> tuple[int, list[Move]]:
+        self.nodes += 1
         position = self._position_after(move)
         if move.mate:
             return -INF + ply, []
@@ -148,11 +154,12 @@ class SearchEngine:
             return terminal, []
         return alpha, best_pv
 
-    @measure_time
     def find_best_move(self, depth: int) -> SearchResult:
         alpha = -INF
         beta = INF
         best_pv: list[Move] = []
+        self.nodes = 1
+        start = time.perf_counter()
 
         for move in self._sort_moves(self.position.get_possible_moves()):
             final_move, taken_piece = self.move_handler.make_a_move(move)
@@ -163,7 +170,7 @@ class SearchEngine:
                 move=final_move,
                 alpha=-beta,
                 beta=-alpha,
-                ply=1,
+                ply=1
             )
             score = -child_score
             self.board.undo_move(final_move, taken_piece)
@@ -174,7 +181,9 @@ class SearchEngine:
 
             if alpha >= beta:
                 break
-        return SearchResult(score=alpha, pv=best_pv)
+
+        elapsed = int((time.perf_counter() - start) * 1000)
+        return SearchResult(score=alpha, move_line=best_pv, nodes=self.nodes, time=elapsed)
 
     @staticmethod
     def _sort_moves(moves: set[Move]) -> list[Move]:
