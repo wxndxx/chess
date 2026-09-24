@@ -82,7 +82,12 @@ class UciEngine(BaseMode):
         if params[1] == "depth":
             self.depth = int(params[2])
         self._search_result = self._search.find_best_move(self.depth)
-        self._info(score=self._search_result.score, nodes=self._search_result.nodes, time=self._search_result.time)
+        self._info(
+            score=self._search_result.score,
+            nodes=self._search_result.nodes,
+            time=self._search_result.time,
+            pv=self._search_result.pv
+        )
         played, _ = self._search.move_handler.make_a_move(self._search_result.move)
         if played:
             print(f"bestmove {str(played.start_square) + str(played.end_square)}")
@@ -102,8 +107,8 @@ class UciEngine(BaseMode):
                 return move
         raise InvalidCommandException(raw_move, "Invalid move")
 
-    def _info(self, score: int, nodes: int, time: int) -> None:
-        print(f"info depth {self.depth} score cp {score} nodes {nodes} time {time}")
+    def _info(self, score: int, nodes: int, time: int, pv: str) -> None:
+        print(f"info depth {self.depth} score cp {score} nodes {nodes} time {time} pv {pv}")
 
     def _identify(self) -> None:
         self._send(f"id name {NAME}")

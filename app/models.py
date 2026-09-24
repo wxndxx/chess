@@ -1,10 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import NewType
 
 
 AUTHOR = "Roman Klimov (rklimov@hotmail.com)"
-NAME = "Plodder"
+NAME = "Pivoslav"
 
 
 REVERSE_NOTATION = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
@@ -108,8 +108,35 @@ class Move:
             notation += "="
         return notation
 
+    def to_uci(self) -> str:
+        if self.promotion:
+            return f"{self.start_square}{self.end_square}{self.promotion.value}"
+        return f"{self.start_square}{self.end_square}"
+
     def __repr__(self) -> str:
         return self.to_fen()
+
+
+@dataclass
+class SearchResult:
+    score: int
+    nodes: int
+    time: int
+    move_line: list[Move] = field(default_factory=list)
+
+    @property
+    def move(self) -> Move | None:
+        return self.move_line[0] if self.move_line else None
+
+    @property
+    def pv(self) -> str:
+        line = [move.to_uci() for move in self.move_line]
+        return ' '.join(line)
+
+    @property
+    def pv_fen(self) -> str:
+        line = [str(move) for move in self.move_line]
+        return ' '.join(line)
 
 
 class PositionsForCastlingWhite:

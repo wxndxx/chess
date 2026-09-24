@@ -4,57 +4,12 @@ from dataclasses import dataclass, field
 from app.handlers.evaluation import EvaluationHandler, PIECE_VALUES
 from app.handlers.move import MoveHandler
 from app.handlers.position import PositionHandler
-from app.models import Move, Color
+from app.models import Move, Color, SearchResult
 from app.tools import measure_time
 
 
 INF = 40000
 MATE_THRESHOLD = INF - 512
-
-
-@dataclass
-class SearchResult:
-    score: int
-    nodes: int
-    time: int
-    move_line: list[Move] = field(default_factory=list)
-
-    @property
-    def move(self) -> Move | None:
-        return self.move_line[0] if self.move_line else None
-
-    def format_score(self) -> str:
-        if self.score >= MATE_THRESHOLD:
-            plies = INF - self.score
-            return f"M{(plies + 1) // 2}"
-        if self.score <= -MATE_THRESHOLD:
-            plies = INF + self.score
-            return f"-M{(plies + 1) // 2}"
-        return f"{self.score / 100:.1f}"
-
-    def format_line(self, side: Color, move_number: int = 1) -> str:
-        if not self.move_line:
-            return ""
-        parts: list[str] = []
-        current = side
-        number = move_number
-        for index, move in enumerate(self.move_line):
-            if current == Color.WHITE:
-                parts.append(f"{number}. {move}")
-            elif index == 0:
-                parts.append(f"{number}... {move}")
-            else:
-                parts.append(str(move))
-            if current == Color.BLACK:
-                number += 1
-            current = Color.BLACK if current == Color.WHITE else Color.WHITE
-        return " ".join(parts)
-
-    def __str__(self) -> str:
-        line = self.format_line(self.move_line[0].side) if self.move_line else ""
-        if line:
-            return f"{self.format_score()}  {line}"
-        return self.format_score()
 
 
 class SearchEngine:

@@ -33,7 +33,9 @@ class Game(BaseMode):
             while True:
                 self.show_board()
                 if self.score and self._search_result is not None:
-                    print(f"Score: {self._search_result.format_score()}")
+                    print(f"Score: {round(self._search_result.score / 100, 1)}\n"
+                          f"PV: {self._search_result.pv_fen}")
+
                 if self._position.is_mate() or self._position.is_draw():
                     break
                 if self._position.move_order == self.color:
