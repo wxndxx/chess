@@ -59,6 +59,7 @@ class Board:
             short_rook.position = create_and_validate_square(
                 short_rook, row_delta=0, file_delta=-2
             )
+            short_rook.has_moved = True
             self.add(piece=short_rook, square=short_rook.position)
         if is_long_castling(move):
             long_rook = self._get_long_rook(move.side)
@@ -66,6 +67,7 @@ class Board:
             long_rook.position = create_and_validate_square(
                 long_rook, row_delta=0, file_delta=+3
             )
+            long_rook.has_moved = True
             self.add(piece=long_rook, square=long_rook.position)
         return taken_piece
 
@@ -96,6 +98,7 @@ class Board:
                 if move.side == Color.BLACK
                 else PositionsForCastlingWhite.short_rook
             )
+            short_rook.has_moved = False
             self.add(piece=short_rook, square=short_rook.position)
         if is_long_castling(move):
             rook_square = create_and_validate_square(
@@ -108,6 +111,7 @@ class Board:
                 if move.side == Color.BLACK
                 else PositionsForCastlingWhite.long_rook
             )
+            long_rook.has_moved = False
             self.add(piece=long_rook, square=long_rook.position)
 
     def display(self, pretty: bool = False, icons: bool = False) -> None:

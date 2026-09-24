@@ -2,6 +2,7 @@ from app.logging import debug
 from app.modes.game import Game
 from app.models import Color, EngineMode
 from app.modes.uci import UciEngine
+import argparse
 
 
 def terminal():
@@ -54,6 +55,10 @@ def main():
 
 
 if __name__ == "__main__":
-    debug()
+    parser = argparse.ArgumentParser(description='Chess Engine')
+    parser.add_argument("-d", "--debug", action="store_true")
+    args = parser.parse_args()
+    if args.debug:
+        debug()
     main()
 
