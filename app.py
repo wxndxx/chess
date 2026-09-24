@@ -1,3 +1,4 @@
+from app.logging import debug
 from app.modes.game import Game
 from app.models import Color, EngineMode
 from app.modes.uci import UciEngine
@@ -53,5 +54,6 @@ def main():
 
 
 if __name__ == "__main__":
+    debug()
     main()
 
