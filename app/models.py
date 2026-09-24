@@ -3,11 +3,29 @@ from enum import StrEnum
 from typing import NewType
 
 
+AUTHOR = "Roman Klimov (rklimov@hotmail.com)"
+NAME = "Plodder"
+
+
 REVERSE_NOTATION = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
 
 
 Row = NewType("Row", int)
 File = NewType("File", int)
+
+
+class UCICommands(StrEnum):
+    UCI = "uci"
+    READY = "isready"
+    NEW_GAME = "ucinewgame"
+    QUIT = "quit"
+    POSITION = "position"
+    GO = "go"
+
+
+class EngineMode(StrEnum):
+    UCI = "uci"
+    Terminal = "terminal"
 
 
 class Color(StrEnum):

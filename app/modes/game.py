@@ -1,34 +1,16 @@
-from app.configuration import Configuration
-from app.handlers.board import Board
-from app.handlers.pieces import PieceHandler
-from app.handlers.position import PositionHandler
-from app.handlers.search import SearchEngine, SearchResult
 from app.models import Color, Move
+from app.modes.base import BaseMode
 
 
-class Game:
+class Game(BaseMode):
     def __init__(self, color: Color, pretty: bool, icons: bool, score: bool) -> None:
+        super().__init__()
         self.pretty = pretty
         self.icons = icons
         self.score = score
-        self.config = Configuration()
         self.color = color
-        self._board: Board = None
-        self._position: PositionHandler = None
-        self._search: SearchEngine = None
-        self._search_result: SearchResult = None
 
-        self._initialize()
-
-    def _initialize(self):
-        pieces = PieceHandler.create_pieces(self.config.fen)
-        self._board = Board(pieces)
-        self._position = PositionHandler(
-            board=self._board,
-            move_order=self.config.fen.move_order,
-            en_passant=self.config.fen.en_passant
-        )
-        self._search = SearchEngine(position=self._position)
+        self._initialize(self.config.fen)
 
     def show_board(self) -> None:
         self._board.display(self.pretty, self.icons)
@@ -46,7 +28,7 @@ class Game:
                 print(f"Invalid move - {text}. Possible moves - {self._position.get_possible_moves()}")
         return user_move
 
-    def play(self) -> None:
+    def loop(self) -> None:
         try:
             while True:
                 self.show_board()
